@@ -1,0 +1,169 @@
+<Window x:Class="TaskbarMusicWidget.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="TaskbarMusicWidget"
+        Height="40" Width="284"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize">
+
+    <Window.Resources>
+        <Style x:Key="MediaBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#BBBBBB"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#40FFFFFF"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#60FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Name="MainBorder"
+            CornerRadius="6"
+            Margin="1"
+            Background="#1A1A1A">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="8" ShadowDepth="0" Opacity="0.6" Color="Black"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="36"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="74"/>
+                <ColumnDefinition Width="24"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid Name="AlbumContainer" Grid.Column="0" Margin="3" MouseEnter="AlbumArtContainer_MouseEnter" MouseLeave="AlbumArtContainer_MouseLeave">
+                <Border CornerRadius="4,0,0,4" ClipToBounds="True" Cursor="Hand" MouseLeftButtonUp="AlbumArt_Click" ToolTip="Zaman Çizelgesi (Süre)">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#3D3D3D" Offset="0"/>
+                            <GradientStop Color="#2D2D2D" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Grid>
+                        <Image Name="AlbumArt" Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock Name="NoArtIcon" Text="&#9835;" FontSize="16"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="#555555"/>
+                    </Grid>
+                </Border>
+                
+                <Popup Name="TimelinePopup" Placement="Top" PlacementTarget="{Binding RelativeSource={RelativeSource AncestorType=Grid}}"
+                       AllowsTransparency="True" PopupAnimation="Fade" StaysOpen="False" MouseEnter="TimelinePopup_MouseEnter" MouseLeave="TimelinePopup_MouseLeave">
+                    <Border Background="#E61A1A1A" CornerRadius="6" Padding="10" Margin="0,0,0,8" BorderBrush="#333" BorderThickness="1" Width="220">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,4">
+                                <TextBlock Name="TxtPosition" Text="0:00" Foreground="White" FontSize="10" HorizontalAlignment="Left"/>
+                                <TextBlock Name="TxtDuration" Text="0:00" Foreground="White" FontSize="10" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Slider Name="SldTimeline" Minimum="0" Maximum="100" Value="0" IsMoveToPointEnabled="True"
+                                    PreviewMouseLeftButtonDown="SldTimeline_MouseDown"
+                                    PreviewMouseLeftButtonUp="SldTimeline_MouseUp"
+                                    ValueChanged="SldTimeline_ValueChanged"/>
+                        </StackPanel>
+                    </Border>
+                </Popup>
+            </Grid>
+
+            <Border Grid.Column="1" ClipToBounds="True" VerticalAlignment="Center" Margin="4,0,2,0">
+                <StackPanel VerticalAlignment="Center">
+                    <Canvas Name="TitleCanvas" Height="14" ClipToBounds="True">
+                        <TextBlock Name="TxtTitle"
+                                   Canvas.Top="0"
+                                   Text="Muzik calmiyor"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   TextWrapping="NoWrap">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="TxtTitleTransform" X="0" Y="0"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                    </Canvas>
+                    <TextBlock Name="TxtArtist"
+                               Text=""
+                               FontSize="9"
+                               Foreground="#888888"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="0,1,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Margin="2,0">
+                <Button Name="BtnPrev"
+                        Content="&#x23EE;"
+                        Style="{StaticResource MediaBtn}"
+                        Click="BtnPrev_Click"
+                        ToolTip="Önceki"/>
+                <Button Name="BtnPlay"
+                        Content="&#x25B6;"
+                        Style="{StaticResource MediaBtn}"
+                        FontSize="12"
+                        Width="24"
+                        Click="BtnPlay_Click"
+                        ToolTip="Oynat/Duraklat"/>
+                <Button Name="BtnNext"
+                        Content="&#x23ED;"
+                        Style="{StaticResource MediaBtn}"
+                        Click="BtnNext_Click"
+                        ToolTip="Sonraki"/>
+            </StackPanel>
+
+            <Grid Name="VolContainer" Grid.Column="3" Background="Transparent" 
+                  MouseWheel="Volume_MouseWheel" 
+                  MouseEnter="Volume_MouseEnter" 
+                  MouseLeave="Volume_MouseLeave"
+                  Cursor="Hand" Margin="2,0,4,0">
+                <TextBlock Text="&#x1F50A;" Foreground="#BBBBBB" FontSize="11" 
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Popup Name="VolPopup" Placement="Top" PlacementTarget="{Binding ElementName=VolContainer}" 
+                       AllowsTransparency="True" PopupAnimation="Slide"
+                       MouseLeave="VolPopup_MouseLeave"
+                       MouseWheel="Volume_MouseWheel">
+                    <Border Background="#1A1A1A" CornerRadius="6" Padding="6,10" Margin="0,0,0,8" 
+                            BorderBrush="#333" BorderThickness="1">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.5"/>
+                        </Border.Effect>
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Name="TxtVolumeVal" Text="50" Foreground="White" FontSize="10" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                            <Slider Name="SldVolume" Orientation="Vertical" Height="70" Minimum="0" Maximum="100" Value="50"
+                                    IsMoveToPointEnabled="True"
+                                    ValueChanged="SldVolume_ValueChanged" />
+                        </StackPanel>
+                    </Border>
+                </Popup>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
