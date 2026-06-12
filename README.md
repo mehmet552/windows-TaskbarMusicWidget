@@ -1,3 +1,6 @@
+<img width="410" height="172" alt="Ekran görüntüsü 2026-06-12 172312" src="https://github.com/user-attachments/assets/3e4aaa2b-5f5c-40ca-8d99-1bfdd5111e09" />
+<img width="412" height="113" alt="Ekran görüntüsü 2026-06-12 172301" src="https://github.com/user-attachments/assets/55ee3b4c-bbfc-4ae3-b05d-589915ddb1d8" />
+<img width="453" height="42" alt="Ekran görüntüsü 2026-06-12 172244" src="https://github.com/user-attachments/assets/179e8f21-d0ed-4f5a-89c0-32c1eb389ecf" />
 # Taskbar Music Widget
 
 A simple Windows taskbar widget that displays current music information.
