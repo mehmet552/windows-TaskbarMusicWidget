@@ -3,8 +3,7 @@
 <img width="453" height="42" alt="Ekran görüntüsü 2026-06-12 172244" src="https://github.com/user-attachments/assets/179e8f21-d0ed-4f5a-89c0-32c1eb389ecf" />
 # Taskbar Music Widget
 
-A simple Windows taskbar widget that displays current music information.
-
+ A simple  Windows taskbar widget that displays the current song and allows you to pause, resume, skip to the previous or next song, change the song duration, and control the volume.
 ## Installation
 
 To install the widget, simply run the provided batch script:
