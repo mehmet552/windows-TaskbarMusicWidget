@@ -13,7 +13,12 @@ $startupFolder = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\S
 $shortcutPath = Join-Path $startupFolder "$appName.lnk"
 
 Write-Host ">>> Uygulama kapatiliyor..." -ForegroundColor Cyan
-Stop-Process -Name $appName -Force -ErrorAction SilentlyContinue
+$procs = Get-Process -Name $appName -ErrorAction SilentlyContinue
+if ($procs) {
+    Stop-Process -Name $appName -Force -ErrorAction SilentlyContinue
+    $procs | Wait-Process -Timeout 5 -ErrorAction SilentlyContinue
+}
+Start-Sleep -Seconds 2
 
 Write-Host ">>> Baslangic (Startup) kisayolu siliniyor..." -ForegroundColor Cyan
 if (Test-Path $shortcutPath) {
