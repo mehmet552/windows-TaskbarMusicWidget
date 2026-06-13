@@ -102,7 +102,11 @@ namespace TaskbarMusicWidget
         {
             InitializeComponent();
             Loaded += OnLoaded;
-            Closed += (_, _) => _scrollSb?.Stop();
+            Closed += (_, _) => 
+            {
+                _scrollSb?.Stop();
+                AudioManager.Cleanup();
+            };
             SystemEvents.UserPreferenceChanged += (_, e) =>
             {
                 if (e.Category == UserPreferenceCategory.General) ApplyTheme();
@@ -113,7 +117,6 @@ namespace TaskbarMusicWidget
 
         // ── Loaded & SourceInitialized ─────────────────────────────────────────
         private DispatcherTimer _topmostTimer;
-        private DispatcherTimer _volumeTimer;
         private DispatcherTimer _timelineTimer;
         private DispatcherTimer _timelineHideTimer;
         private bool _isUpdatingVolume = false;
@@ -139,23 +142,24 @@ namespace TaskbarMusicWidget
             _topmostTimer.Tick += (s, ev) => PositionOnTaskbar();
             _topmostTimer.Start();
 
-            // Ses seviyesi senkronizasyonu
+            // Ses seviyesi senkronizasyonu (Event tabanli)
+            AudioManager.Initialize();
+            AudioManager.VolumeChanged += (vol) =>
+            {
+                Dispatcher.InvokeAsync(() =>
+                {
+                    if (Math.Abs(vol - SldVolume.Value) > 1.0)
+                    {
+                        _isUpdatingVolume = true;
+                        SldVolume.Value = vol;
+                        _isUpdatingVolume = false;
+                    }
+                });
+            };
+
             _isUpdatingVolume = true;
             SldVolume.Value = AudioManager.GetMasterVolume();
             _isUpdatingVolume = false;
-
-            _volumeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
-            _volumeTimer.Tick += (s, ev) =>
-            {
-                float vol = AudioManager.GetMasterVolume();
-                if (Math.Abs(vol - SldVolume.Value) > 1.0)
-                {
-                    _isUpdatingVolume = true;
-                    SldVolume.Value = vol;
-                    _isUpdatingVolume = false;
-                }
-            };
-            _volumeTimer.Start();
 
             _timelineTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _timelineTimer.Tick += (s, ev) => UpdateTimelineUI();

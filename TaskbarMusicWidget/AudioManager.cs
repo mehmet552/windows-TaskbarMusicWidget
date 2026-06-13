@@ -3,13 +3,45 @@ using System.Runtime.InteropServices;
 
 namespace TaskbarMusicWidget
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AUDIO_VOLUME_NOTIFICATION_DATA
+    {
+        public Guid guidEventContext;
+        public int bMuted;
+        public float fMasterVolume;
+        public int nChannels;
+        public float afChannelVolumes;
+    }
+
+    [ComImport]
+    [Guid("657804FA-D6AD-4496-8A60-352752AF4F8E")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IAudioEndpointVolumeCallback
+    {
+        void OnNotify(IntPtr pNotify);
+    }
+
+    public class AudioVolumeCallback : IAudioEndpointVolumeCallback
+    {
+        public event Action<float> VolumeChanged;
+
+        public void OnNotify(IntPtr pNotify)
+        {
+            if (pNotify != IntPtr.Zero)
+            {
+                var data = Marshal.PtrToStructure<AUDIO_VOLUME_NOTIFICATION_DATA>(pNotify);
+                VolumeChanged?.Invoke(data.fMasterVolume * 100f);
+            }
+        }
+    }
+
     [ComImport]
     [Guid("5CDF2C82-841E-4546-9722-0CF74078229A")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IAudioEndpointVolume
     {
-        int RegisterControlChangeNotify(IntPtr pNotify);
-        int UnregisterControlChangeNotify(IntPtr pNotify);
+        int RegisterControlChangeNotify(IAudioEndpointVolumeCallback pNotify);
+        int UnregisterControlChangeNotify(IAudioEndpointVolumeCallback pNotify);
         int GetChannelCount(out int pnChannelCount);
         int SetMasterVolumeLevel(float fLevelDB, Guid pguidEventContext);
         int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext);
@@ -51,7 +83,36 @@ namespace TaskbarMusicWidget
 
     public static class AudioManager
     {
-        public static IAudioEndpointVolume GetMasterVolumeObject()
+        private static IAudioEndpointVolume _epv;
+        private static AudioVolumeCallback _callback;
+
+        public static event Action<float> VolumeChanged;
+
+        public static void Initialize()
+        {
+            _epv = GetMasterVolumeObject();
+            if (_epv != null)
+            {
+                _callback = new AudioVolumeCallback();
+                _callback.VolumeChanged += (v) => VolumeChanged?.Invoke(v);
+                _epv.RegisterControlChangeNotify(_callback);
+            }
+        }
+
+        public static void Cleanup()
+        {
+            if (_epv != null && _callback != null)
+            {
+                _epv.UnregisterControlChangeNotify(_callback);
+            }
+            if (_epv != null)
+            {
+                Marshal.ReleaseComObject(_epv);
+                _epv = null;
+            }
+        }
+
+        private static IAudioEndpointVolume GetMasterVolumeObject()
         {
             IMMDeviceEnumerator deviceEnumerator = null;
             try
@@ -77,27 +138,42 @@ namespace TaskbarMusicWidget
         {
             try
             {
-                var epv = GetMasterVolumeObject();
-                if (epv != null)
+                if (_epv != null)
                 {
-                    epv.GetMasterVolumeLevelScalar(out float volume);
-                    Marshal.ReleaseComObject(epv);
+                    _epv.GetMasterVolumeLevelScalar(out float volume);
                     return volume * 100f;
+                }
+                else
+                {
+                    var epv = GetMasterVolumeObject();
+                    if (epv != null)
+                    {
+                        epv.GetMasterVolumeLevelScalar(out float volume);
+                        Marshal.ReleaseComObject(epv);
+                        return volume * 100f;
+                    }
                 }
             }
             catch { }
-            return 50f; // Default if fails
+            return 50f;
         }
 
         public static void SetMasterVolume(float newLevel)
         {
             try
             {
-                var epv = GetMasterVolumeObject();
-                if (epv != null)
+                if (_epv != null)
                 {
-                    epv.SetMasterVolumeLevelScalar(newLevel / 100f, Guid.Empty);
-                    Marshal.ReleaseComObject(epv);
+                    _epv.SetMasterVolumeLevelScalar(newLevel / 100f, Guid.Empty);
+                }
+                else
+                {
+                    var epv = GetMasterVolumeObject();
+                    if (epv != null)
+                    {
+                        epv.SetMasterVolumeLevelScalar(newLevel / 100f, Guid.Empty);
+                        Marshal.ReleaseComObject(epv);
+                    }
                 }
             }
             catch { }
