@@ -4,7 +4,9 @@
 
 # Taskbar Music Widget
 
- A simple  Windows taskbar widget that displays the current song and allows you to pause, resume, skip to the previous or next song, change the song duration, and control the volume.
+ A simple  Windows taskbar widget that displays the current song and allows you to pause, resume, skip to the previous or next song, change the song duration, and control the volume. 
+ It also automatically hides itself when a full-screen application or game is running.
+ 
 ## Installation
 
 To install the widget, simply run the provided batch script:
