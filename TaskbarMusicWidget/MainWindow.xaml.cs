@@ -97,6 +97,7 @@ namespace TaskbarMusicWidget
         private bool _isPlaying = false;
         private bool _scrolling = false;
         private Storyboard? _scrollSb;
+        private Storyboard? _visualizerSb;
 
         public MainWindow()
         {
@@ -105,6 +106,7 @@ namespace TaskbarMusicWidget
             Closed += (_, _) => 
             {
                 _scrollSb?.Stop();
+                _visualizerSb?.Stop(this);
                 AudioManager.Cleanup();
             };
             SystemEvents.UserPreferenceChanged += (_, e) =>
@@ -113,6 +115,7 @@ namespace TaskbarMusicWidget
             };
             ApplyTheme();
             BuildScrollStoryboard();
+            BuildVisualizerStoryboard();
         }
 
         // ── Loaded & SourceInitialized ─────────────────────────────────────────
@@ -362,7 +365,11 @@ namespace TaskbarMusicWidget
             {
                 var info = _session.GetPlaybackInfo();
                 _isPlaying = info?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-                Dispatcher.Invoke(() => BtnPlay.Content = _isPlaying ? "\u23F8" : "\u25B6");
+                Dispatcher.Invoke(() => 
+                {
+                    BtnPlay.Content = _isPlaying ? "\u23F8" : "\u25B6";
+                    UpdateVisualizerState();
+                });
             }
             catch { }
         }
@@ -383,6 +390,7 @@ namespace TaskbarMusicWidget
                 NoArtIcon.Visibility = Visibility.Visible;
                 BtnPlay.Content = "\u25B6";
                 _isPlaying = false;
+                UpdateVisualizerState();
                 _scrollSb?.Stop(this);
                 _scrolling = false;
                 TxtTitleTransform.X = 0;
@@ -407,6 +415,60 @@ namespace TaskbarMusicWidget
             Storyboard.SetTargetName(anim, "TxtTitleTransform");
             Storyboard.SetTargetProperty(anim, new PropertyPath(TranslateTransform.XProperty));
             _scrollSb.Children.Add(anim);
+        }
+
+        private void BuildVisualizerStoryboard()
+        {
+            _visualizerSb = new Storyboard();
+            
+            var anim1 = new DoubleAnimationUsingKeyFrames { RepeatBehavior = RepeatBehavior.Forever };
+            anim1.KeyFrames.Add(new LinearDoubleKeyFrame(2, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(0))));
+            anim1.KeyFrames.Add(new LinearDoubleKeyFrame(10, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(200))));
+            anim1.KeyFrames.Add(new LinearDoubleKeyFrame(4, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(400))));
+            anim1.KeyFrames.Add(new LinearDoubleKeyFrame(12, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(600))));
+            anim1.KeyFrames.Add(new LinearDoubleKeyFrame(2, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(800))));
+
+            var anim2 = new DoubleAnimationUsingKeyFrames { RepeatBehavior = RepeatBehavior.Forever };
+            anim2.KeyFrames.Add(new LinearDoubleKeyFrame(2, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(0))));
+            anim2.KeyFrames.Add(new LinearDoubleKeyFrame(14, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(250))));
+            anim2.KeyFrames.Add(new LinearDoubleKeyFrame(6, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(500))));
+            anim2.KeyFrames.Add(new LinearDoubleKeyFrame(12, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(750))));
+            anim2.KeyFrames.Add(new LinearDoubleKeyFrame(2, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1000))));
+
+            var anim3 = new DoubleAnimationUsingKeyFrames { RepeatBehavior = RepeatBehavior.Forever };
+            anim3.KeyFrames.Add(new LinearDoubleKeyFrame(2, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(0))));
+            anim3.KeyFrames.Add(new LinearDoubleKeyFrame(8, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(300))));
+            anim3.KeyFrames.Add(new LinearDoubleKeyFrame(14, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(600))));
+            anim3.KeyFrames.Add(new LinearDoubleKeyFrame(4, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(900))));
+            anim3.KeyFrames.Add(new LinearDoubleKeyFrame(2, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(1200))));
+
+            Storyboard.SetTargetName(anim1, "Bar1");
+            Storyboard.SetTargetProperty(anim1, new PropertyPath(FrameworkElement.HeightProperty));
+            
+            Storyboard.SetTargetName(anim2, "Bar2");
+            Storyboard.SetTargetProperty(anim2, new PropertyPath(FrameworkElement.HeightProperty));
+
+            Storyboard.SetTargetName(anim3, "Bar3");
+            Storyboard.SetTargetProperty(anim3, new PropertyPath(FrameworkElement.HeightProperty));
+
+            _visualizerSb.Children.Add(anim1);
+            _visualizerSb.Children.Add(anim2);
+            _visualizerSb.Children.Add(anim3);
+        }
+
+        private void UpdateVisualizerState()
+        {
+            if (_isPlaying)
+            {
+                _visualizerSb?.Begin(this, true);
+            }
+            else
+            {
+                _visualizerSb?.Stop(this);
+                Bar1.Height = 2;
+                Bar2.Height = 2;
+                Bar3.Height = 2;
+            }
         }
 
         // ── Butonlar ──────────────────────────────────────────────────────────
@@ -562,12 +624,14 @@ namespace TaskbarMusicWidget
                     MainBorder.Background = new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1A));
                     TxtTitle.Foreground   = Brushes.White;
                     TxtArtist.Foreground  = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
+                    Bar1.Fill = Bar2.Fill = Bar3.Fill = Brushes.White;
                 }
                 else
                 {
                     MainBorder.Background = new SolidColorBrush(Color.FromRgb(0xF2, 0xF2, 0xF2));
                     TxtTitle.Foreground   = Brushes.Black;
                     TxtArtist.Foreground  = new SolidColorBrush(Color.FromRgb(0x44, 0x44, 0x44));
+                    Bar1.Fill = Bar2.Fill = Bar3.Fill = Brushes.Black;
                 }
             }
             catch { }
