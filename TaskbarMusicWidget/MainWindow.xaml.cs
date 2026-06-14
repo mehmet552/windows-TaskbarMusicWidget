@@ -129,8 +129,15 @@ namespace TaskbarMusicWidget
         {
             base.OnSourceInitialized(e);
 
-            // WindowStyle degisiklikleri pencere gosterilmeden HEMEN SONRA yapilmali (Loaded'dan once)
-            // Aksi takdirde AllowsTransparency=True olan pencereler gorunmez olur.
+            // To prevent WPF from corrupting/flickering the taskbar (Windows logo) in the background while using hardware acceleration on transparent windows, we force software rendering (SoftwareOnly).
+            var hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+            if (hwndSource != null && hwndSource.CompositionTarget != null)
+            {
+                hwndSource.CompositionTarget.RenderMode = RenderMode.SoftwareOnly;
+            }
+
+            // WindowStyle changes must be made IMMEDIATELY AFTER the window is shown (before Loaded)
+            // Otherwise windows with AllowsTransparency=True will become invisible.
             var hWnd = new WindowInteropHelper(this).Handle;
             int exStyle = GetWindowLong(hWnd, GWL_EXSTYLE);
             SetWindowLong(hWnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
@@ -140,12 +147,12 @@ namespace TaskbarMusicWidget
         {
             PositionOnTaskbar();
             
-            // Gorev cubugu bazen widget'in ustune cikabilir, bunu onlemek icin periyodik olarak uste al
+            // The taskbar can sometimes overlap the widget, to prevent this, bring to front periodically
             _topmostTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _topmostTimer.Tick += (s, ev) => PositionOnTaskbar();
             _topmostTimer.Start();
 
-            // Ses seviyesi senkronizasyonu (Event tabanli)
+            // Volume synchronization (Event based)
             AudioManager.Initialize();
             AudioManager.VolumeChanged += (vol) =>
             {
@@ -195,7 +202,7 @@ namespace TaskbarMusicWidget
             catch { }
         }
 
-        // ── Windows 11: Gorev cubugu uzerine overlay ──────────────────────────
+        // ── Windows 11: Taskbar overlay ──────────────────────────
         private void PositionOnTaskbar()
         {
             var hWnd = new WindowInteropHelper(this).Handle;
@@ -212,10 +219,10 @@ namespace TaskbarMusicWidget
                     this.Visibility = Visibility.Visible;
             }
 
-            // Gorev cubugu pozisyonunu bul
+            // Find taskbar position
             var taskbar = FindWindow("Shell_TrayWnd", null);
 
-            // DPI faktorunu hesapla
+            // Calculate DPI factor
             var source = PresentationSource.FromVisual(this);
             double dpiScale = source?.CompositionTarget?.TransformToDevice.M22 ?? 1.25;
 
@@ -228,8 +235,23 @@ namespace TaskbarMusicWidget
                 int targetX = tbRect.Left + 8;
                 int targetY = tbRect.Top + (tbHeight - widgetH) / 2;
 
-                SetWindowPos(hWnd, HWND_TOPMOST, targetX, targetY, widgetW, widgetH,
-                             SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                GetWindowRect(hWnd, out RECT currentRect);
+                bool needsUpdate = (currentRect.Left != targetX) || 
+                                   (currentRect.Top != targetY) || 
+                                   (currentRect.Right - currentRect.Left != widgetW) || 
+                                   (currentRect.Bottom - currentRect.Top != widgetH);
+
+                if (needsUpdate)
+                {
+                    SetWindowPos(hWnd, HWND_TOPMOST, targetX, targetY, widgetW, widgetH,
+                                 SWP_SHOWWINDOW | SWP_NOACTIVATE);
+                }
+                else
+                {
+                    // Only update Z-Order, skip move and size. Reduces flickering in the Windows logo by preventing unnecessary SetWindowPos calls.
+                    SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0,
+                                 SWP_SHOWWINDOW | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
+                }
             }
             else
             {
@@ -308,7 +330,7 @@ namespace TaskbarMusicWidget
                 var props = await _session.TryGetMediaPropertiesAsync();
                 if (props == null) { Dispatcher.Invoke(ShowIdle); return; }
 
-                var title  = string.IsNullOrWhiteSpace(props.Title)  ? "Bilinmiyor" : props.Title;
+                var title  = string.IsNullOrWhiteSpace(props.Title)  ? "Unknown" : props.Title;
                 var artist = string.IsNullOrWhiteSpace(props.Artist) ? ""           : props.Artist;
 
                 Dispatcher.Invoke(() => 
@@ -317,7 +339,7 @@ namespace TaskbarMusicWidget
                     TxtArtist.Text = artist;
                 });
 
-                // Album kapagi
+                // Album art
                 if (props.Thumbnail != null)
                 {
                     try
@@ -345,7 +367,7 @@ namespace TaskbarMusicWidget
                     Dispatcher.Invoke(() => { AlbumArt.Source = null; NoArtIcon.Visibility = Visibility.Visible; });
                 }
 
-                // Kayan animasyon
+                // Scrolling animation
                 Dispatcher.Invoke(() => 
                 {
                     TxtTitle.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
@@ -384,7 +406,7 @@ namespace TaskbarMusicWidget
 
             try 
             {
-                TxtTitle.Text  = "Muzik calmiyor";
+                TxtTitle.Text  = "No music playing";
                 TxtArtist.Text = "";
                 AlbumArt.Source = null;
                 NoArtIcon.Visibility = Visibility.Visible;
@@ -398,7 +420,7 @@ namespace TaskbarMusicWidget
             catch { }
         }
 
-        // ── Storyboard (kayan baslik) ──────────────────────────────────────────
+        // ── Storyboard (scrolling title) ──────────────────────────────────────────
         private void BuildScrollStoryboard()
         {
             _scrollSb = new Storyboard { RepeatBehavior = RepeatBehavior.Forever };
@@ -471,7 +493,7 @@ namespace TaskbarMusicWidget
             }
         }
 
-        // ── Butonlar ──────────────────────────────────────────────────────────
+        // ── Buttons ──────────────────────────────────────────────────────────
         private void BtnPrev_Click(object sender, RoutedEventArgs e)
         {
             keybd_event(VK_MEDIA_PREV, 0, 0, 0);
@@ -610,7 +632,7 @@ namespace TaskbarMusicWidget
             });
         }
 
-        // ── Tema ──────────────────────────────────────────────────────────────
+        // ── Theme ──────────────────────────────────────────────────────────────
         private void ApplyTheme()
         {
             try

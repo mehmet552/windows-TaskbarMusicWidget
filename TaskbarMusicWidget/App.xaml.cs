@@ -53,7 +53,7 @@ namespace TaskbarMusicWidget
 
             var contextMenu = new System.Windows.Forms.ContextMenuStrip();
             
-            var exitItem = new System.Windows.Forms.ToolStripMenuItem("Çıkış Yap");
+            var exitItem = new System.Windows.Forms.ToolStripMenuItem("Exit");
             exitItem.Click += (s, args) => 
             {
                 _notifyIcon.Visible = false;

@@ -48,7 +48,7 @@
             Margin="1"
             Background="#1A1A1A">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="8" ShadowDepth="0" Opacity="0.6" Color="Black"/>
+            <DropShadowEffect BlurRadius="8" ShadowDepth="0" Opacity="0.6" Color="Black" RenderingBias="Performance"/>
         </Border.Effect>
 
         <Grid>
@@ -61,7 +61,7 @@
             </Grid.ColumnDefinitions>
 
             <Grid Name="AlbumContainer" Grid.Column="0" Margin="3" MouseEnter="AlbumArtContainer_MouseEnter" MouseLeave="AlbumArtContainer_MouseLeave">
-                <Border CornerRadius="4,0,0,4" ClipToBounds="True" Cursor="Hand" MouseLeftButtonUp="AlbumArt_Click" ToolTip="Zaman Çizelgesi (Süre)">
+                <Border CornerRadius="4,0,0,4" ClipToBounds="True" Cursor="Hand" MouseLeftButtonUp="AlbumArt_Click" ToolTip="Timeline (Duration)">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                             <GradientStop Color="#3D3D3D" Offset="0"/>
@@ -99,7 +99,7 @@
                     <Canvas Name="TitleCanvas" Height="14" ClipToBounds="True">
                         <TextBlock Name="TxtTitle"
                                    Canvas.Top="0"
-                                   Text="Muzik calmiyor"
+                                   Text="No music playing"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="White"
@@ -131,19 +131,19 @@
                         Content="&#x23EE;"
                         Style="{StaticResource MediaBtn}"
                         Click="BtnPrev_Click"
-                        ToolTip="Önceki"/>
+                        ToolTip="Previous"/>
                 <Button Name="BtnPlay"
                         Content="&#x25B6;"
                         Style="{StaticResource MediaBtn}"
                         FontSize="12"
                         Width="24"
                         Click="BtnPlay_Click"
-                        ToolTip="Oynat/Duraklat"/>
+                        ToolTip="Play/Pause"/>
                 <Button Name="BtnNext"
                         Content="&#x23ED;"
                         Style="{StaticResource MediaBtn}"
                         Click="BtnNext_Click"
-                        ToolTip="Sonraki"/>
+                        ToolTip="Next"/>
             </StackPanel>
 
             <Grid Name="VolContainer" Grid.Column="4" Background="Transparent" 
